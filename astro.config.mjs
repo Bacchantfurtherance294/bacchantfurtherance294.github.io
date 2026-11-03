@@ -1,8 +1,10 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+
 export default defineConfig({
-  site: 'https://static-recipe-website.netlify.app',
+  site: 'https://danielgrandibbq.github.io',
   output: 'static',
+  redirects: { '/': '/pt/' },
   integrations: [sitemap()],
   vite: {
     build: {
