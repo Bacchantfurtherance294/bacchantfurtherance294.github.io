@@ -1,0 +1,8 @@
+---
+import { categories, copy } from '../lib/site';
+const {recipe,lang}=Astro.props; const r=recipe.data; const t=copy[lang as 'pt'|'en'];
+---
+<article class="recipe-card" data-key={r.key} data-categories={r.categories.join(',')}>
+<a class="card-image" href={`/${lang}/recipes/${r.key}/`}><img src={r.image||'/images/steak.jpg'} alt={r.title} loading="lazy" width="800" height="600"/></a>
+<div class="card-body"><div class="eyebrow">{r.categories.map((c:keyof typeof categories)=><a href={`/${lang}/categories/${c}/`}>{categories[c][lang as 'pt'|'en']}</a>)}</div><h3><a href={`/${lang}/recipes/${r.key}/`}>{r.title}</a></h3><p>{r.description}</p><a class="text-link" href={`/${lang}/recipes/${r.key}/`}>{t.view} <span>↗</span></a></div>
+</article>

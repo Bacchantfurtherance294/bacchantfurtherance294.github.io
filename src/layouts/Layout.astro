@@ -1,0 +1,29 @@
+---
+import '../styles/global.css';
+import { copy, siteName, instagram, type Lang } from '../lib/site';
+const {lang='pt',title,description,image='/images/steak.jpg',otherPath,active='home',recipe=false}=Astro.props;
+const t=copy[lang as Lang];
+const siteDescription=description || t.intro;
+const canonical=new URL(Astro.url.pathname,Astro.site);
+---
+<!doctype html>
+<html lang={lang}>
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>{title ? `${title} · ${siteName}` : `${siteName} · ${t.hero} ${t.italic}`}</title>
+<meta name="description" content={siteDescription}/><meta name="theme-color" content="#f8f6f0"/>
+<link rel="canonical" href={canonical}/><link rel="alternate" hreflang={lang} href={canonical}/><link rel="alternate" hreflang={lang==='pt'?'en':'pt'} href={new URL(otherPath,Astro.site)}/>
+<meta property="og:title" content={title ? `${title} · ${siteName}` : siteName}/><meta property="og:description" content={siteDescription}/><meta property="og:site_name" content={siteName}/><meta property="og:type" content={recipe?'article':'website'}/><meta property="og:url" content={canonical}/><meta property="og:locale" content={lang==='pt'?'pt_BR':'en_US'}/>
+<meta name="twitter:card" content="summary_large_image"/><meta name="twitter:image" content={new URL(image,Astro.site)}/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+</head>
+<body>
+<a class="skip" href="#main">{lang==='pt'?'Pular para o conteúdo':'Skip to content'}</a>
+<header class="header" data-pagefind-ignore><div class="shell header-inner">
+<a class="brand" href={`/${lang}/`} aria-label={siteName}><img class="brand-logo" src="/images/daniel-grandi-logo.webp" width="94" height="80" alt=""/><span>DANIEL GRANDI<small>BBQ & COZINHA</small></span></a>
+<nav aria-label={lang==='pt'?'Navegação principal':'Main navigation'}><a class:list={[active==='home'&&'active']} href={`/${lang}/`}>{t.home}</a><a class:list={[active==='recipes'&&'active']} href={`/${lang}/recipes/`}>{t.recipes}</a><a class:list={[active==='about'&&'active']} href={`/${lang}/about/`}>{t.about}</a></nav>
+<div class="header-right"><a class="social" href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><div class="language"><a class:list={[lang==='pt'&&'selected']} href={lang==='pt'?Astro.url.pathname:otherPath} lang="pt" aria-label="Português" aria-current={lang==='pt'?'true':undefined}>PT</a><span>/</span><a class:list={[lang==='en'&&'selected']} href={lang==='en'?Astro.url.pathname:otherPath} lang="en" aria-label="English" aria-current={lang==='en'?'true':undefined}>EN</a></div></div>
+</div></header>
+<main id="main"><slot/></main>
+<footer data-pagefind-ignore><div class="shell footer-top"><a class="brand" href={`/${lang}/`}>DANIEL GRANDI <small>BBQ & COZINHA</small></a><p>{t.footer}</p><a href={instagram} target="_blank" rel="noopener noreferrer">Instagram ↗</a></div><div class="shell footer-bottom"><span>© {new Date().getFullYear()} Daniel Grandi BBQ</span><span>{t.rights}</span></div></footer>
+</body></html>

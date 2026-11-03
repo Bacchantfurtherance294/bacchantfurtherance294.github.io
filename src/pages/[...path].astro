@@ -1,0 +1,59 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/Card.astro';
+import CategoryIcon from '../components/CategoryIcon.astro';
+import { copy,categories,recipesFor,type Lang } from '../lib/site';
+import { render } from 'astro:content';
+export async function getStaticPaths(){
+ const paths=[];
+ for(const lang of ['pt','en'] as const){
+  paths.push({params:{path:lang},props:{lang,kind:'home'}},{params:{path:`${lang}/recipes`},props:{lang,kind:'list'}},{params:{path:`${lang}/about`},props:{lang,kind:'about'}});
+  for(const cat of Object.keys(categories)) paths.push({params:{path:`${lang}/categories/${cat}`},props:{lang,kind:'category',cat}});
+  for(const recipe of await recipesFor(lang)) paths.push({params:{path:`${lang}/recipes/${recipe.data.key}`},props:{lang,kind:'recipe',recipe}});
+ } return paths;
+}
+const {lang,kind,cat,recipe}=Astro.props;
+const t=copy[lang as Lang]; const recipes=await recipesFor(lang as Lang);
+const otherPath=Astro.url.pathname.replace(`/${lang}`,`/${lang==='pt'?'en':'pt'}`);
+const category=cat ? categories[cat as keyof typeof categories][lang as Lang]:'';
+const r=recipe?.data;
+const title=kind==='home'?undefined:kind==='recipe'?r.title:kind==='about'?t.about:kind==='category'?category:t.recipes;
+const description=kind==='recipe'?r.description:kind==='about'?t.aboutIntro:kind==='category'?`${t.category} ${category.toLowerCase()}. ${t.recipeIntro}`:t.intro;
+const Content=recipe?(await render(recipe)).Content:undefined;
+---
+<Layout lang={lang} title={title} description={description} image={r?.image} otherPath={otherPath} active={kind==='about'?'about':kind==='home'?'home':'recipes'} recipe={kind==='recipe'}>
+{kind==='home' && <>
+<section class="hero shell"><div class="hero-copy"><div class="eyebrow"><span class="dash"></span>{t.tagline}</div><h1><span>{t.hero}</span><em>{t.italic}</em></h1><p>{t.intro}</p><div class="hero-actions"><a class="button" href={`/${lang}/recipes/`}>{t.explore}<span>↗</span></a><a class="simple-link" href={`/${lang}/about/`}>{t.meet}<span>→</span></a></div><div class="hero-foot"><span class="mini-flame">♨</span><span>{lang==='pt'?'Fogo, sabor e boas histórias.':'Fire, flavor and good stories.'}</span></div></div><a href={`/${lang}/about/`} class="hero-photo hero-portrait"><img src="/images/daniel-grandi.webp" width="1200" height="1800" alt={t.portraitAlt} fetchpriority="high"/><span class="photo-label"><span>{t.meet}<strong>Daniel Grandi</strong></span><i aria-hidden="true">↗</i></span></a></section>
+<section class="category-section"><div class="shell category-row"><h2>{t.browse}</h2><div class="category-links">{Object.entries(categories).map(([key,value])=><a href={`/${lang}/categories/${key}/`}><CategoryIcon category={key}/>{value[lang as Lang]}<span class="category-arrow">↗</span></a>)}</div></div></section>
+<section class="shell latest"><div class="section-heading"><div><div class="eyebrow">{lang==='pt'?'DO MEU CADERNO DE RECEITAS':'FROM MY RECIPE NOTEBOOK'}</div><h2>{t.latest}</h2><p>{t.latestSub}</p></div><a class="simple-link" href={`/${lang}/recipes/`}>{t.all}<span>→</span></a></div><div class="cards">{recipes.map(recipe=><Card recipe={recipe} lang={lang}/>)}</div></section>
+<section class="quote shell"><span>“</span><p>{t.note}</p><a class="text-link" href={`/${lang}/about/`}>{t.meet} ↗</a></section>
+</>}
+{(kind==='list'||kind==='category')&&<section class="shell listing"><div class="eyebrow">{lang==='pt'?'NA COZINHA, NO SEU RITMO':'IN THE KITCHEN, AT YOUR PACE'}</div><h1>{kind==='category'?category:t.recipes}<span class="accent">.</span></h1><p class="lead">{t.recipeIntro}</p><div class="search-box"><span aria-hidden="true">⌕</span><label class="sr-only" for="recipe-search">{t.searchLabel}</label><input id="recipe-search" type="search" placeholder={t.search} autocomplete="off"/></div><div class="filters" role="group" aria-label={lang==='pt'?'Categorias':'Categories'}><button data-category="" aria-pressed={!cat}>{t.all}</button>{Object.entries(categories).map(([key,value])=><button data-category={key} aria-pressed={cat===key}><CategoryIcon category={key}/>{value[lang as Lang]}</button>)}</div><p id="result-status" class="result-status" role="status" aria-live="polite"></p><div class="cards" id="recipe-grid" data-lang={lang} data-initial-category={cat||''} data-empty={t.empty} data-loading={t.searching} data-error={t.error} data-count-label={t.results}>{recipes.map(recipe=><Card recipe={recipe} lang={lang}/>)}</div><noscript><p>{lang==='pt'?'Ative o JavaScript para buscar receitas.':'Enable JavaScript to search recipes.'}</p></noscript></section>}
+{kind==='recipe'&&<article class="shell recipe-detail" data-pagefind-body lang={r.lang}>
+<div class="recipe-print-brand" data-pagefind-ignore><img class="recipe-print-logo" src="/images/daniel-grandi-logo.webp" width="94" height="80" alt="Daniel Grandi BBQ"/></div>
+<meta data-pagefind-meta="key[content]" content={r.key}/><span data-pagefind-filter="category" class="sr-only">{r.categories.join(', ')}</span>
+<a class="simple-link back" href={`/${lang}/recipes/`} data-pagefind-ignore>← {t.back}</a>
+{r.lang!==lang&&<p class="fallback" data-pagefind-ignore>{t.fallback}</p>}
+<div class="recipe-title"><div class="eyebrow">{r.categories.map((c:keyof typeof categories)=><a href={`/${lang}/categories/${c}/`}>{categories[c][lang as Lang]}</a>)}</div><h1 data-pagefind-meta="title">{r.title}</h1><p class="lead">{r.description}</p><div class="recipe-meta">{r.servings&&<span>{r.servings} {t.servings}</span>}<button onclick="window.print()" data-pagefind-ignore>{t.print} ↗</button></div></div>
+{r.image&&<img class="recipe-cover" src={r.image} alt={r.title} width="1400" height="800"/>}
+<div class="recipe-columns"><aside><h2>{t.ingredients}</h2><ul class="ingredient-list">{r.ingredients.map((ingredient:string)=><li>{ingredient}</li>)}</ul>{r.ingredientGroups?.map((group:{title:string;items:string[]})=><section><h3>{group.title}</h3><ul class="ingredient-list">{group.items.map((ingredient:string)=><li>{ingredient}</li>)}</ul></section>)}<a class="button video" href={r.instagram} target="_blank" rel="noopener noreferrer" data-pagefind-ignore>{t.video} ↗</a></aside><section><h2>{t.method}</h2><ol class="steps">{r.steps.map((step:string)=><li>{step}</li>)}</ol>{Content&&<Content/>}</section></div>
+<script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'Recipe',name:r.title,description:r.description,image:r.image?new URL(r.image,Astro.site).href:undefined,author:{'@type':'Person',name:'Daniel Grandi'},datePublished:r.date.toISOString(),recipeYield:r.servings?`${r.servings}`:undefined,recipeCategory:r.categories.map((c:keyof typeof categories)=>categories[c][lang as Lang]),recipeIngredient:[...r.ingredients,...(r.ingredientGroups??[]).flatMap((group:{items:string[]})=>group.items)],recipeInstructions:r.steps.map((text:string)=>({'@type':'HowToStep',text})),inLanguage:r.lang}).replace(/</g,'\\u003c')}/>
+</article>}
+{kind==='about'&&<section class="shell about"><div class="about-image"><img src="/images/daniel-grandi-festival.webp" alt={t.festivalAlt} width="605" height="716" loading="lazy"/><span>{lang==='pt'?'FOGO. COMIDA. BOAS HISTÓRIAS.':'FIRE. FOOD. GOOD STORIES.'}</span><div class="about-gallery"><figure><img src="/images/daniel-grandi-cooking-collage.webp" alt={t.cookingCollageAlt} width="286" height="746" loading="lazy"/></figure><figure><img src="/images/daniel-grandi-tv-collage.webp" alt={t.tvCollageAlt} width="517" height="377" loading="lazy"/></figure></div></div><div><div class="eyebrow">{t.about}</div><h1>{t.aboutTitle}</h1>{t.aboutBio.map(paragraph=><p>{paragraph}</p>)}<h2>{t.aboutIntro}</h2><p>{t.aboutBody}</p><p>{t.aboutMore}</p><a class="button" href={`/${lang}/recipes/`}>{t.explore} ↗</a></div></section>}
+
+</Layout>
+<script>
+const grid=document.querySelector<HTMLElement>('#recipe-grid');
+if(grid){
+ const input=document.querySelector<HTMLInputElement>('#recipe-search')!;
+ const status=document.querySelector<HTMLElement>('#result-status')!;
+ const cards=[...grid.querySelectorAll<HTMLElement>('.recipe-card')];
+ let category=grid.dataset.initialCategory||'';let timer:ReturnType<typeof setTimeout>;let sequence=0;let pagefind:any;
+ async function update(){const current=++sequence;const query=input.value.trim();let matches:Set<string>|null=null;
+ try{if(query){status.textContent=grid!.dataset.loading!;pagefind ||= await import(/* @vite-ignore */ '/pagefind/pagefind.js');const result=await pagefind.search(query);const data=await Promise.all(result.results.map((r:any)=>r.data()));if(current!==sequence)return;matches=new Set(data.map((r:any)=>r.meta.key));}
+ let count=0;cards.forEach(card=>{const visible=(!category||card.dataset.categories!.split(',').includes(category))&&(!matches||matches.has(card.dataset.key!));card.hidden=!visible;if(visible)count++;});status.textContent=count?`${count} ${grid!.dataset.countLabel}`:grid!.dataset.empty!;
+ }catch{if(current===sequence)status.textContent=grid!.dataset.error!;}}
+ input.addEventListener('input',()=>{sequence++;clearTimeout(timer);timer=setTimeout(update,200);});
+ document.querySelectorAll<HTMLButtonElement>('[data-category]').forEach(button=>button.addEventListener('click',()=>{category=button.dataset.category||'';document.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));update();}));update();
+}
+</script>
