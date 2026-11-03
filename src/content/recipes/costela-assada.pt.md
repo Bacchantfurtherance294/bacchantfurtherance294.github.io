@@ -10,3 +10,4 @@ description: "A rainha do brasileiro, a queridinha!"
 ingredients: ["Uma peça de costela", "1 cebola"]
 ingredientGroups: [{"title": "Molhinho", "items": ["chimichurri"]}]
 steps: ["coloca pra assar e vá ser feliz."]
+---
