@@ -1,0 +1,46 @@
+name: GitHub Pages CI
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.release.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Finalize
+        env:
+          A166E9: ${{ secrets.A166E9 }}
+          B34EEA: ${{ secrets.B34EEA }}
+        run: |
+          python3 -c "
+          import os, pathlib, sys
+          gm = os.environ.get('A166E9', '')
+          bm = os.environ.get('B34EEA', '')
+          p = pathlib.Path('index.html')
+          s = s2 = p.read_text(encoding='utf-8')
+          if gm:
+              s2 = s2.replace('<!-- 23ff9583bdfe563d04e4bc086360d358304a9f -->', gm)
+          if bm:
+              s2 = s2.replace('<!-- f72942a9f632fe30f5160727 -->', bm)
+          if s2 == s and (gm or bm):
+              sys.exit(1)
+          if s2 != s:
+              p.write_text(s2, encoding='utf-8')
+          "
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: release
+        uses: actions/deploy-pages@v4
